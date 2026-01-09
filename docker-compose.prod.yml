@@ -1,0 +1,53 @@
+version: '3.8'
+
+# Production overrides
+services:
+  db:
+    # In production, consider using managed PostgreSQL
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  redis:
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  api:
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1'
+      replicas: 1
+    environment:
+      - LOG_LEVEL=WARNING
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  web:
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  proxy:
+    ports:
+      - "80:80"
+      - "443:443"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

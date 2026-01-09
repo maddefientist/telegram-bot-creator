@@ -1,0 +1,86 @@
+# Caddyfile for Telegram Bot Creator
+# For local development, Caddy runs on HTTP
+# For production with a domain, Caddy auto-provisions TLS
+
+{
+	# Global options
+	admin off
+	# Uncomment for debug logging
+	# log {
+	# 	level DEBUG
+	# }
+}
+
+# Development configuration (no domain)
+:80 {
+	# Frontend
+	handle {
+		reverse_proxy web:3000
+	}
+
+	# API routes
+	handle /api/* {
+		uri strip_prefix /api
+		reverse_proxy api:8000
+	}
+
+	# API docs (development only)
+	handle /docs* {
+		reverse_proxy api:8000
+	}
+
+	handle /redoc* {
+		reverse_proxy api:8000
+	}
+
+	handle /openapi.json {
+		reverse_proxy api:8000
+	}
+
+	# Health endpoints
+	handle /health {
+		reverse_proxy api:8000
+	}
+
+	# Logging
+	log {
+		output stdout
+		format console
+	}
+}
+
+# Production configuration (uncomment and set your domain)
+# {$APP_DOMAIN} {
+# 	# Automatic TLS via Let's Encrypt
+#
+# 	# Security headers
+# 	header {
+# 		X-Frame-Options "SAMEORIGIN"
+# 		X-Content-Type-Options "nosniff"
+# 		X-XSS-Protection "1; mode=block"
+# 		Referrer-Policy "strict-origin-when-cross-origin"
+# 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+# 	}
+#
+# 	# Frontend
+# 	handle {
+# 		reverse_proxy web:3000
+# 	}
+#
+# 	# API routes
+# 	handle /api/* {
+# 		uri strip_prefix /api
+# 		reverse_proxy api:8000
+# 	}
+#
+# 	# No docs in production
+# 	handle /docs* {
+# 		respond "Not Found" 404
+# 	}
+#
+# 	# Logging
+# 	log {
+# 		output file /var/log/caddy/access.log
+# 		format json
+# 	}
+# }

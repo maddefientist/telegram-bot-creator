@@ -1,0 +1,176 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-botcreator}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - botcreator
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - botcreator
+
+  # Docker Socket Proxy (security layer)
+  docker-proxy:
+    image: tecnativa/docker-socket-proxy:latest
+    restart: unless-stopped
+    privileged: true
+    environment:
+      # Permissions for managing containers
+      CONTAINERS: 1
+      POST: 1
+      IMAGES: 0
+      NETWORKS: 0
+      VOLUMES: 0
+      NODES: 0
+      SERVICES: 0
+      TASKS: 0
+      SECRETS: 0
+      CONFIGS: 0
+      PLUGINS: 0
+      SWARM: 0
+      AUTH: 0
+      BUILD: 0
+      COMMIT: 0
+      EXEC: 0
+      EVENTS: 0
+      INFO: 0
+      PING: 1
+      VERSION: 1
+      SYSTEM: 0
+      DISTRIBUTION: 0
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - botcreator
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:2375/version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # FastAPI Backend
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      docker-proxy:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-botcreator}
+      - REDIS_URL=redis://redis:6379/0
+      - JWT_SECRET=${JWT_SECRET}
+      - CSRF_SECRET=${CSRF_SECRET}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - OPENROUTER_MODEL=${OPENROUTER_MODEL:-anthropic/claude-3.5-sonnet}
+      - SOLANA_RPC_URL=${SOLANA_RPC_URL}
+      - SOLANA_TREASURY_ADDRESS=${SOLANA_TREASURY_ADDRESS}
+      - RUNNER_SHARED_SECRET=${RUNNER_SHARED_SECRET}
+      - APP_BASE_URL=${APP_BASE_URL:-http://localhost:3000}
+      - API_BASE_URL=${API_BASE_URL:-http://localhost:8000}
+      - PRICING_MIN_SOL=${PRICING_MIN_SOL:-0.01}
+      - PRICING_MAX_SOL=${PRICING_MAX_SOL:-10.0}
+      - DEFAULT_PRICE_SOL=${DEFAULT_PRICE_SOL:-0.1}
+      - GRACE_DAYS=${GRACE_DAYS:-3}
+      - BOT_MEMORY_LIMIT=${BOT_MEMORY_LIMIT:-256m}
+      - BOT_CPU_LIMIT=${BOT_CPU_LIMIT:-0.5}
+      - RUNNER_IMAGE=${RUNNER_IMAGE:-botcreator-runner:latest}
+      - DOCKER_NETWORK=botcreator_default
+      - DOCKER_HOST=tcp://docker-proxy:2375
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - botcreator
+
+  # Next.js Frontend
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      - NEXT_PUBLIC_API_URL=${API_BASE_URL:-http://localhost:8000}
+      - API_URL=http://api:8000
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - botcreator
+
+  # Bot Runner base image (built separately, containers spawned by API)
+  runner:
+    build:
+      context: ./apps/runner
+      dockerfile: Dockerfile
+    image: botcreator-runner:latest
+    profiles:
+      - build-only
+    networks:
+      - botcreator
+
+  # Caddy Reverse Proxy
+  proxy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - web
+      - api
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infra/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - botcreator
+
+volumes:
+  postgres_data:
+  redis_data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  botcreator:
+    name: botcreator_default
+    driver: bridge

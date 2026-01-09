@@ -1,0 +1,70 @@
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+ENV/
+.eggs/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# Node.js
+node_modules/
+.npm
+.pnpm-store/
+
+# Next.js
+.next/
+out/
+.vercel
+
+# Build outputs
+dist/
+build/
+*.egg
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.override.yml
+
+# Logs
+*.log
+logs/
+
+# Backups
+backups/
+
+# Secrets (these should NEVER be committed)
+*.pem
+*.key
+secrets/
+
+# Local config
+.claude/
+
+# Test artifacts
+.coverage
+coverage/
