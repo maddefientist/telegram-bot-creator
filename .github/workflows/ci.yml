@@ -55,13 +55,13 @@ jobs:
         env:
           DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/test
           REDIS_URL: redis://localhost:6379/0
-          JWT_SECRET: test-secret-key-min-32-characters-long
-          CSRF_SECRET: test-csrf-secret-min-32-characters
-          ENCRYPTION_KEY: dGVzdC1lbmNyeXB0aW9uLWtleS0zMi1jaGFyYWN0ZXJz
+          JWT_SECRET: test-jwt-secret-only
+          CSRF_SECRET: test-csrf-secret-only
+          ENCRYPTION_KEY: test-encryption-key-only
           OPENROUTER_API_KEY: test-key
           SOLANA_RPC_URL: https://api.devnet.solana.com
           SOLANA_TREASURY_ADDRESS: 11111111111111111111111111111111
-          RUNNER_SHARED_SECRET: test-runner-secret-min-32-characters
+          RUNNER_SHARED_SECRET: test-runner-secret-only
         run: |
           cd apps/api
           pytest --cov=. --cov-report=xml

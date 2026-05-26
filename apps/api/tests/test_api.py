@@ -5,15 +5,15 @@ from unittest.mock import patch, AsyncMock
 
 # We need to mock settings before importing app
 import os
-os.environ.setdefault("JWT_SECRET", "test-secret-key-min-32-characters-long")
-os.environ.setdefault("CSRF_SECRET", "test-csrf-secret-min-32-characters")
-os.environ.setdefault("ENCRYPTION_KEY", "dGVzdC1lbmNyeXB0aW9uLWtleS0zMi1jaGFyYWN0ZXJz")  # base64
+os.environ.setdefault("JWT_SECRET", "test-jwt-secret-only")
+os.environ.setdefault("CSRF_SECRET", "test-csrf-secret-only")
+os.environ.setdefault("ENCRYPTION_KEY", "test-encryption-key-only")  # base64
 os.environ.setdefault("DATABASE_URL", "postgresql+asyncpg://test:test@localhost/test")
 os.environ.setdefault("REDIS_URL", "redis://localhost:6379/0")
 os.environ.setdefault("OPENROUTER_API_KEY", "test-key")
 os.environ.setdefault("SOLANA_RPC_URL", "https://api.devnet.solana.com")
 os.environ.setdefault("SOLANA_TREASURY_ADDRESS", "11111111111111111111111111111111")  # Valid base58, 32 bytes
-os.environ.setdefault("RUNNER_SHARED_SECRET", "test-runner-secret-min-32-characters")
+os.environ.setdefault("RUNNER_SHARED_SECRET", "test-runner-secret-only")
 
 
 class TestHealthEndpoints:
